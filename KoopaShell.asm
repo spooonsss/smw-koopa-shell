@@ -1,6 +1,7 @@
 ;=======================================================================================;
 ; Koopa / Shell disassembly + additional features (sprites 4-7, DA-DF)                  ;
 ; v1.0, by KevinM                                                                       ;
+; rideable modifications by spooonsss                                                   ;
 ;=======================================================================================;
 ; Koopa/Shell type is set by the act-as and the palette of the sprite (you don't really ;
 ; need to worry about it, since there's a json file for each one):                      ;
@@ -111,10 +112,15 @@
 !KickedSFXAddr      = $1DF9|!addr
 
 ; Time to disable contact with Mario after kicking the shell.
-!KickNoInteractTime = $10
+!KickNoInteractTime = $1A
 
 ; X speed when kicked sideways by Mario.
-!KickXSpeed         = $2E
+!KickXSpeed         = $11
+assert !KickXSpeed > 2
+
+!MaxDownwardSpeed = $20 ; just for kicked state
+
+!KickedShellBouncesOffBlocks = 0
 
 ; Y speed when thrown upwards by Mario.
 !KickYSpeed         = $90
@@ -879,8 +885,8 @@ KickedShell:
     bne +                   ;|
     lda !B6,x               ;|
     clc                     ;| If not being caught by a Koopa, return to carryable if it slows down enough.
-    adc #$20                ;|
-    cmp #$40                ;|
+    adc.b #min($20, !KickXSpeed)-2                ;|
+    cmp.b #(min($20, !KickXSpeed)-2)*2                ;|
     bcs +                   ;|
     jsr SetCarryable        ;/
 +   stz !1528,x             ;\
@@ -897,6 +903,17 @@ KickedShell:
 +   lda !15B8,x
     pha
     jsl $01802A|!bank       ; Update X/Y positions with gravity and interact with blocks.
+
+    ; limit downward speed to let Mario ride and not fall off
+    ; (either when speed is high or when the shell is sucked to the ground at 0193B4)
+    LDA !AA,X
+    BMI +
+    CMP #!MaxDownwardSpeed
+    BCC +
+    LDA #!MaxDownwardSpeed
+    STA !AA,X
+
++
     pla
     beq +
     sta $00
@@ -924,7 +941,35 @@ KickedShell:
 +   lda !1588,x             ;\
     and #$03                ;| If hitting the side of a block, interact with it.
     beq FinishHandleKicked  ;|
+if !KickedShellBouncesOffBlocks
     jsr SideBlockInteract   ;/
+else
+
+    lda !1588,x             ;\
+    and #$40                ;|
+    asl #2                  ;|
+    rol                     ;|
+    and #$01                ;| Trigger the block.
+    sta $1933|!addr         ;|
+    ldy #$00                ;|
+    lda $18A7|!addr         ;|
+    jsl $00F160|!bank       ;/
+
+    LDA !15A0,x
+    ORA !186C,x
+    BNE +
+
+    STZ $00
+    STZ $01
+    LDA #$1B
+    STA $02
+    LDA #$01
+    %SpawnSmoke()
++
+    STZ !sprite_status,x
+    RTS
+endif
+
 FinishHandleKicked:
     jsr SprMarioInteract
 .0: lda #$00
@@ -1088,11 +1133,14 @@ NoStar:
     stz $18D2|!addr
     lda !154C,x             ;\ If contact is disabled, return.
     bne SprMarioInteract_Return ;/
-    lda #$08                ;\ Briefly disable contact.
-    sta !154C,x             ;/
+    ; lda #$08                ;\ Briefly disable contact.
+    ; sta !154C,x             ;/
     lda !14C8,x
     cmp #$09
     bne NotStationaryInteract
+
+    ; lda !154C,x             ;\ If contact is disabled, return.
+    ; bne Boost_Return ;/
     jmp StationaryInteract
 
 NotStationaryInteract:
@@ -1116,12 +1164,12 @@ NotStationaryInteract:
     and #$10                ;|
     bne +                   ;|
     lda $1697|!addr         ;|
-    beq NotBouncing         ;|
+    ;beq NotBouncing         ;|
 +   lda !1588,x             ;|
     and #$04                ;|
     beq +                   ;|
-    lda $72                 ;|
-    beq NotBouncing         ;/
+    ;lda $72                 ;|
+    ;beq NotBouncing         ;/
 +   lda !1656,x             ;\
     and #$10                ;| If the sprite can be bounced on, jump.
     bne JumpOnSprite        ;/
@@ -1129,13 +1177,20 @@ NotStationaryInteract:
     ora $187A|!addr         ;| If not spinjumping or riding Yoshi, don't bounce.
     beq NotBouncing         ;/
 Boost:                      ; Otherwise, spinjump on the enemy.
+    ; lda !154C,x             ;\ If contact is disabled, return.
+    ; bne .Return ;/
+
     lda #$02                ;\ Play SFX.
     sta $1DF9|!addr         ;/
     jsl $01AA33|!bank       ;> Boost Mario's speed.
     jsl $01AB99|!bank       ;> Display contact GFX.
+.Return:
     rts
 
 NotBouncing:
+    ; lda !154C,x             ;\ If contact is disabled, return.
+    ; bne Boost_Return ;/
+
     lda $13ED|!addr         ;\ If sliding
     beq +                   ;|
     lda !190F,x             ;| and sprite can be killed with slide
@@ -1163,6 +1218,12 @@ JumpOnSprite:
     beq NormalJump          ;/
 
 SpinJumpKill:               ;> Otherwise, kill with a spinjump.
+    ; lda !154C,x             ;\ If contact is disabled, return.
+    ; bne NotBouncing_Return ;/
+
+    lda $7D
+    bmi NotBouncing_Return
+
     jsl $01AB99|!bank       ;> Display contact GFX
 if !AlwaysSpinBoost == 0    ;\
     lda #!SpinKillYSpeed    ;|
@@ -1182,6 +1243,56 @@ endif                       ;|
     rts
 
 NormalJump:
+
+    ; ; %SubVertPos()        ; 
+    ; ; LDA $0F                 ; \ if mario isn't above sprite, and there's vertical contact...
+    ; LDA $96
+    ; SEC
+    ; SBC !D8,x
+    ; CMP #$E6                ; E8 with normal mario |     ... sprite wins
+    ; BPL SPRITE_WINS         ; /
+    LDA $7D                 ; \if mario speed is upward, return
+    BMI .Return           ; /
+
+    ; lda #$08                ;\ Briefly disable contact.
+    ; sta !154C,x             ;/
+
+    LDA #$01                ; \ set "on sprite" flag
+    STA $1471|!Base2               ; /
+    LDA.b #$10                  ;$01B476    |\\ Y speed to give Mario when sitting on top of the block.
+    STA $7D                     ;$01B478    |/
+    ;LDA #$06                ; \ set riding sprite
+    ;STA !154C,x             ; / 
+    ;STZ $7D                 ; y speed = 0
+    LDA #$E5
+    LDY $187A|!Base2               ;  | mario's y position += E1 or D1 depending if on yoshi
+    BEQ .NO_YOSHI            ;  |
+    LDA #$D5                ;  |
+.NO_YOSHI:
+    CLC                     ;  |
+    ADC !D8,x               ;  |
+    STA $96                 ;  |
+    LDA !14D4,x             ;  |
+    ADC #$FF                ;  |
+    STA $97                 ; /
+    LDY #$00                ; \ 
+    LDA $77
+    AND #$03
+    BNE .Return
+    LDA $1491|!Base2               ;  | $1491 == 01 or FF, depending on direction
+    BPL +              ;  | set mario's new x position
+    DEY                     ;  |
++
+    CLC                     ;  |
+    ADC $94                 ;  |
+    STA $94                 ;  |
+    TYA                     ;  |
+    ADC $95                 ;  |
+    STA $95                 ; /
+.Return:
+    RTS                     ;
+
+
     jsr Boost               ;> Set Y speed, display contact GFX, play SFX.
     lda !187B,x             ;\ If not Disco Shell, branch.
     beq NormalBounce        ;/

@@ -25,7 +25,7 @@
     "Process when off screen": false,
     "Don't change into shell when stunned": false,
     "Can't be kicked like shell": false,
-    "Process interaction with Mario every frame": false,
+    "Process interaction with Mario every frame": true,
     "Gives power-up when eaten by yoshi": false,
     "Don't use default interaction with Mario": true
   },
@@ -101,7 +101,15 @@
       "Extra Property Byte 1": 64,
       "Extra Property Byte 2": 0,
       "Extra Property Byte 3": 0,
-      "Extra Property Byte 4": 0
+      "Extra Property Byte 4": 0,
+      "Extra Property Byte 5": 0,
+      "Extra Property Byte 6": 0,
+      "Extra Property Byte 7": 0,
+      "Extra Property Byte 8": 0,
+      "Extra Property Byte 9": 0,
+      "Extra Property Byte 10": 0,
+      "Extra Property Byte 11": 0,
+      "Extra Property Byte 12": 0
     },
     {
       "Name": "Green Shell (stationary)",
@@ -109,7 +117,15 @@
       "Extra Property Byte 1": 64,
       "Extra Property Byte 2": 0,
       "Extra Property Byte 3": 0,
-      "Extra Property Byte 4": 0
+      "Extra Property Byte 4": 0,
+      "Extra Property Byte 5": 0,
+      "Extra Property Byte 6": 0,
+      "Extra Property Byte 7": 0,
+      "Extra Property Byte 8": 0,
+      "Extra Property Byte 9": 0,
+      "Extra Property Byte 10": 0,
+      "Extra Property Byte 11": 0,
+      "Extra Property Byte 12": 0
     },
     {
       "Name": "Green Shell (stationary, Koopa inside)",
@@ -117,7 +133,15 @@
       "Extra Property Byte 1": 64,
       "Extra Property Byte 2": 0,
       "Extra Property Byte 3": 0,
-      "Extra Property Byte 4": 255
+      "Extra Property Byte 4": 255,
+      "Extra Property Byte 5": 0,
+      "Extra Property Byte 6": 0,
+      "Extra Property Byte 7": 0,
+      "Extra Property Byte 8": 0,
+      "Extra Property Byte 9": 0,
+      "Extra Property Byte 10": 0,
+      "Extra Property Byte 11": 0,
+      "Extra Property Byte 12": 0
     },
     {
       "Name": "Green Shell (kicked)",
@@ -125,7 +149,15 @@
       "Extra Property Byte 1": 64,
       "Extra Property Byte 2": 0,
       "Extra Property Byte 3": 46,
-      "Extra Property Byte 4": 0
+      "Extra Property Byte 4": 0,
+      "Extra Property Byte 5": 0,
+      "Extra Property Byte 6": 0,
+      "Extra Property Byte 7": 0,
+      "Extra Property Byte 8": 0,
+      "Extra Property Byte 9": 0,
+      "Extra Property Byte 10": 0,
+      "Extra Property Byte 11": 0,
+      "Extra Property Byte 12": 0
     },
     {
       "Name": "Disco Shell",
@@ -133,7 +165,15 @@
       "Extra Property Byte 1": 64,
       "Extra Property Byte 2": 0,
       "Extra Property Byte 3": 128,
-      "Extra Property Byte 4": 0
+      "Extra Property Byte 4": 0,
+      "Extra Property Byte 5": 0,
+      "Extra Property Byte 6": 0,
+      "Extra Property Byte 7": 0,
+      "Extra Property Byte 8": 0,
+      "Extra Property Byte 9": 0,
+      "Extra Property Byte 10": 0,
+      "Extra Property Byte 11": 0,
+      "Extra Property Byte 12": 0
     }
   ]
 }
